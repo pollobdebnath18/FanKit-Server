@@ -87,6 +87,20 @@ app.post("/api/products", async (req, res) => {
   }
 });
 
+// get all products
+app.get("/api/products", async (req, res) => {
+  try {
+    const products = await productCollection.find({}).toArray();
+    res.json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get products.",
+    });
+  }
+});
+
 // create user collection route
 app.get("/api/users/me", async (req, res) => {
   try {
