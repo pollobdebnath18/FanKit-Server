@@ -102,6 +102,89 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+// collection route get all products
+app.get("/api/collections", async (req, res) => {
+  const {
+    search = "",
+    category,
+    team,
+    sort = "newest",
+    page = 1,
+    limit = 8,
+    maxPrice,
+  } = req.query;
+
+  const query: any = {};
+
+  if (search) {
+    query.$or = [
+      {
+        title: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+      {
+        team: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  if (category && category !== "All") {
+    query.category = category;
+  }
+
+  if (team && team !== "All") {
+    query.team = team;
+  }
+
+  if (maxPrice) {
+    query.price = {
+      $lte: Number(maxPrice),
+    };
+  }
+
+  let sortOption = {};
+
+  switch (sort) {
+    case "price-low":
+      sortOption = { price: 1 };
+      break;
+
+    case "price-high":
+      sortOption = { price: -1 };
+      break;
+
+    case "name":
+      sortOption = { title: 1 };
+      break;
+
+    default:
+      sortOption = { createdAt: -1 };
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const products = await productCollection
+    .find(query)
+    .sort(sortOption)
+    .skip(skip)
+    .limit(Number(limit))
+    .toArray();
+
+  const total = await productCollection.countDocuments(query);
+
+  res.json({
+    products,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / Number(limit)),
+  });
+});
+
 // get product by id
 app.get("/api/products/:id", async (req, res) => {
   try {
@@ -122,6 +205,32 @@ app.get("/api/products/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to get product.",
+    });
+  }
+});
+
+// set role for user
+app.post("/api/users/set-role", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    await userCollection.updateOne(
+      { email },
+      {
+        $set: {
+          role: "user",
+        },
+      },
+    );
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
     });
   }
 });
