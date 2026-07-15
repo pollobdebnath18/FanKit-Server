@@ -79,7 +79,7 @@ app.post("/api/products", async (req, res) => {
       insertedId: result.insertedId,
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
 
     res.status(500).json({
       success: false,
