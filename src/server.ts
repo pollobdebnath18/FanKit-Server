@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { client } from "./lib/mongodb.js";
 import { envVar } from "./lib/env.js";
+import { ObjectId } from "mongodb";
 
 const app = express();
 await client.connect();
@@ -97,6 +98,30 @@ app.get("/api/products", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to get products.",
+    });
+  }
+});
+
+// get product by id
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = {
+      _id: new ObjectId(id),
+    };
+    const product = await productCollection.findOne(query);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found.",
+      });
+    }
+    res.json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get product.",
     });
   }
 });
