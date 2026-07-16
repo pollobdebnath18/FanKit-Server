@@ -5,6 +5,7 @@ import { auth } from "./lib/auth.js";
 import { client } from "./lib/mongodb.js";
 import { envVar } from "./lib/env.js";
 import { ObjectId } from "mongodb";
+import { fromNodeHeaders } from "better-auth/node";
 
 const app = express();
 await client.connect();
@@ -239,7 +240,7 @@ app.post("/api/users/set-role", async (req, res) => {
 app.get("/api/users/me", async (req, res) => {
   try {
     const session = await auth.api.getSession({
-      headers: new Headers(req.headers as Record<string, string>),
+      headers: fromNodeHeaders(req.headers),
     });
 
     if (!session) {
