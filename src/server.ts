@@ -11,7 +11,7 @@ await client.connect();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: envVar.CLIENT_URL,
     credentials: true,
   }),
 );

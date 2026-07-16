@@ -24,11 +24,10 @@ export const auth = betterAuth({
       },
     },
   },
-  // advanced: {
-  //   defaultCookieAttributes: {
-  //     sameSite: isProd ? "none" : undefined,
-  //     secure: isProd ? true : undefined,
-  //     partitioned: isProd ? true : undefined,
-  //   },
-  // },
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  },
 });
