@@ -3,8 +3,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { client } from "./mongodb.js";
 import { envVar } from "./env.js";
 
-const isProd = process.env.NODE_ENV === "production" || 
-  (!envVar.CLIENT_URL.includes("localhost") && !envVar.CLIENT_URL.includes("127.0.0.1"));
+const isProd = process.env.NODE_ENV === "production";
 
 export const auth = betterAuth({
   database: mongodbAdapter(client.db(envVar.DB_NAME)),
@@ -25,10 +24,10 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    defaultCookieAttributes: {
+    defaultCookieAttributes: isProd ? {
       sameSite: "none",
       secure: true,
       httpOnly: true,
-    },
+    } : {},
   },
 });
