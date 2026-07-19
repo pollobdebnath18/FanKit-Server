@@ -10,17 +10,15 @@ import { fromNodeHeaders } from "better-auth/node";
 const app = express();
 await client.connect();
 
-const allowedOrigins = [envVar.CLIENT_URL];
-if (process.env.NODE_ENV !== "production") {
-  allowedOrigins.push(
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:5175"
-  );
-}
+const allowedOrigins = [
+  envVar.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175"
+].filter(Boolean);
 
 app.use(
   cors({
