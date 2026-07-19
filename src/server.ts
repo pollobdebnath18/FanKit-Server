@@ -1,24 +1,16 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { client } from "./lib/mongodb.js";
-import { envVar } from "./lib/env.js";
 import { ObjectId } from "mongodb";
 import { fromNodeHeaders } from "better-auth/node";
 
 const app = express();
 await client.connect();
 
-const allowedOrigins = [
-  envVar.CLIENT_URL,
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  "http://127.0.0.1:5175"
-].filter(Boolean);
+const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
 
 app.use(
   cors({
@@ -47,8 +39,8 @@ app.get("/", (req, res) => {
 
 //========================================== routes ===========================================
 // create user collection
-const userCollection = client.db(envVar.DB_NAME).collection("user");
-const productCollection = client.db(envVar.DB_NAME).collection("products");
+const userCollection = client.db(process.env.DB_NAME).collection("user");
+const productCollection = client.db(process.env.DB_NAME).collection("products");
 
 //  create add product route (admin - add product page)
 app.post("/api/products", async (req, res) => {
@@ -252,6 +244,23 @@ app.post("/api/users/set-role", async (req, res) => {
   }
 });
 
+// get all users
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await userCollection.find({}).toArray();
+    res.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get users.",
+    });
+  }
+});
+
 // create user collection route
 app.get("/api/users/me", async (req, res) => {
   try {
@@ -285,6 +294,7 @@ app.get("/api/users/me", async (req, res) => {
   }
 });
 
-app.listen(envVar.PORT, () => {
-  console.log(`Server running On PORT ${envVar.PORT}`);
+const port = Number(process.env.PORT) || 8000;
+app.listen(port, () => {
+  console.log(`Server running On PORT ${port}`);
 });

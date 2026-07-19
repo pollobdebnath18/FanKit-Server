@@ -1,5 +1,5 @@
-import { envVar } from "./env.js";
+import "dotenv/config";
 import { MongoClient } from "mongodb";
 
 
-export const client = new MongoClient(envVar.MONGODB_URI!);
+export const client = new MongoClient(process.env.MONGODB_URI!);
