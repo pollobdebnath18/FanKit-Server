@@ -218,6 +218,36 @@ app.get("/api/products/:id", async (req, res) => {
   }
 });
 
+// delete product by id
+app.delete("/api/products/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await productCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: "Product not found." });
+    }
+    res.json({ success: true, message: "Product deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to delete product." });
+  }
+});
+
+// delete user by id
+app.delete("/api/users/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    res.json({ success: true, message: "User deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to delete user." });
+  }
+});
+
 // set role for user
 app.post("/api/users/set-role", async (req, res) => {
   try {
