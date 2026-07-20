@@ -26,10 +26,14 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    defaultCookieAttributes: isProd ? {
-      sameSite: "none",
-      secure: true,
-      httpOnly: true,
-    } : {},
+    useSecureCookies: isProd,
+    defaultCookieAttributes: isProd
+      ? {
+          sameSite: "none",
+          secure: true,
+          httpOnly: true,
+          partitioned: true, // CHIPS — required for cross-origin cookies in Chrome 118+
+        }
+      : {},
   },
 });
