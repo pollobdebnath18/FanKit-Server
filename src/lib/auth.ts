@@ -14,8 +14,20 @@ export const auth = betterAuth({
 
   trustedOrigins,
 
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 20,
+  },
+
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: false,
+    sendResetPassword: async ({ user, url }) => {
+      // Dev fallback: log the reset link.
+      // TODO: integrate with an email provider (future scope §11).
+      console.log(`[forgot-password] ${user.email}: ${url}`);
+    },
   },
   user: {
     additionalFields: {
