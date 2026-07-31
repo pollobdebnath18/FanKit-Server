@@ -19,10 +19,13 @@ router.get("/", async (req, res) => {
       minPrice,
       maxPrice,
       featured,
+      newArrival,
       onSale,
     } = req.query;
 
-    const query: Record<string, unknown> = {};
+    const query: Record<string, unknown> = { status: "active" };
+
+    if (req.query.status) query.status = req.query.status;
 
     if (search) {
       const regex = { $regex: search, $options: "i" } as const;
@@ -40,6 +43,7 @@ router.get("/", async (req, res) => {
     if (team && team !== "All") query.team = team;
 
     if (featured === "true") query.featured = true;
+    if (newArrival === "true") query.newArrival = true;
     if (onSale === "true") query.onSale = true;
 
     const priceFilter: Record<string, number> = {};
