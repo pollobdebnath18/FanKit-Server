@@ -153,6 +153,16 @@ export interface ContactDoc {
   createdAt: Date;
 }
 
+export interface MessageDoc {
+  _id: ObjectId;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  read: boolean;
+  createdAt: Date;
+}
+
 export interface SettingsDoc {
   _id: ObjectId;
   key: string;
@@ -173,6 +183,7 @@ interface Collections {
   blogPosts: () => Collection<BlogPostDoc>;
   newsletterSubscribers: () => Collection<NewsletterDoc>;
   contactSubmissions: () => Collection<ContactDoc>;
+  messages: () => Collection<MessageDoc>;
   settings: () => Collection<SettingsDoc>;
 }
 
@@ -187,5 +198,6 @@ export const collections: Collections = {
   blogPosts: () => getDB().collection("blog_posts"),
   newsletterSubscribers: () => getDB().collection("newsletter_subscribers"),
   contactSubmissions: () => getDB().collection("contact_submissions"),
+  messages: () => getDB().collection("message"),
   settings: () => getDB().collection("settings"),
 };

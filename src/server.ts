@@ -15,6 +15,7 @@ import usersRouter from "./routes/users.routes.js";
 import addressesRouter from "./routes/addresses.routes.js";
 import blogRouter from "./routes/blog.routes.js";
 import miscRouter from "./routes/misc.routes.js";
+import messagesRouter from "./routes/messages.routes.js";
 
 const app = express();
 await client.connect();
@@ -56,6 +57,7 @@ app.use("/api", reviewsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/addresses", addressesRouter);
 app.use("/api/blog", blogRouter);
+app.use("/api", messagesRouter);
 app.use("/api", miscRouter);
 
 // Central error handler

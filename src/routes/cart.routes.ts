@@ -41,6 +41,7 @@ router.get("/", async (req: AuthedRequest, res) => {
                 slug: product.slug,
                 price: product.price,
                 comparePrice: product.comparePrice,
+                imageUrl: product.imageUrl,
                 images: product.images,
                 stock: product.stock,
                 category: product.category,
