@@ -7,6 +7,61 @@ import { requireAuth, requireAdmin, type AuthedRequest } from "../lib/middleware
 
 const router = Router();
 
+// GET /api/users/auth-status?email=... — check sign-in options for an email
+router.get("/auth-status", async (req, res) => {
+  try {
+    const email = String(req.query.email || "").toLowerCase().trim();
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required." });
+    }
+
+    const user = await collections.users().findOne({ email });
+    if (!user) {
+      return res.json({ success: true, exists: false, hasPassword: false });
+    }
+
+    const account = await collections
+      .users()
+      .db.collection("account")
+      .findOne({ userId: user._id, providerId: "credential" });
+
+    res.json({
+      success: true,
+      exists: true,
+      hasPassword: Boolean(account?.password),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to check auth status." });
+  }
+});
+
+// POST /api/users/set-role — set role to 'user' after signup
+router.post("/set-role", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required." });
+    }
+
+    const result = await collections.users().updateOne(
+      { email },
+      { $set: { role: "user", updatedAt: new Date() } },
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    res.json({ success: true, message: "User role set." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to set user role." });
+  }
+});
+
 // GET /api/users/me — current user profile
 router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
   try {

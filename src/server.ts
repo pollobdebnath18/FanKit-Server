@@ -22,10 +22,14 @@ await client.connect();
 
 const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
 
+const isLocalhost = (origin: string | undefined) =>
+  Boolean(origin && /^http:\/\/localhost(:\d+)?$/.test(origin));
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Dev: allow any localhost port (Vite may auto-shift if 5173 is busy)
+      if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
