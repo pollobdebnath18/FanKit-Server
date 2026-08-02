@@ -1,18 +1,40 @@
 import { Router } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
-import { requireAuth, requireAdmin, type AuthedRequest } from "../lib/middleware.js";
+import {
+  requireAuth,
+  requireAdmin,
+  type AuthedRequest,
+} from "../lib/middleware.js";
+import {
+  ApiError,
+  VALID_ORDER_STATUSES,
+  createOrderFromCart,
+} from "../lib/order.service.js";
+import {
+  validateCustomerInfo,
+  validateShippingAddress,
+} from "../lib/validation.js";
 
 const router = Router();
 
-const SHIPPING_RATE = 100;
-const VALID_STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+// GET /api/orders/admin — all orders (admin)
+router.get("/admin", requireAdmin, async (req: AuthedRequest, res) => {
+  try {
+    const orders = await collections
+      .orders()
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
 
-const generateOrderNumber = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `FK-${timestamp}${random}`;
-};
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to get orders." });
+  }
+});
 
 // GET /api/orders — user's orders
 router.get("/", requireAuth, async (req: AuthedRequest, res) => {
@@ -26,9 +48,38 @@ router.get("/", requireAuth, async (req: AuthedRequest, res) => {
     res.json({ success: true, orders });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Failed to get orders." });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to get orders." });
   }
 });
+
+// GET /api/orders/by-payment/:paymentId — find order by payment intent id (used by success page after Stripe redirect)
+router.get(
+  "/by-payment/:paymentId",
+  requireAuth,
+  async (req: AuthedRequest, res) => {
+    try {
+      const { paymentId } = req.params as { paymentId: string };
+      const order = await collections
+        .orders()
+        .findOne({ paymentId, userId: req.userId! });
+
+      if (!order) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Order not found." });
+      }
+
+      res.json({ success: true, order });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to get order." });
+    }
+  },
+);
 
 // GET /api/orders/:id — single order detail (ownership check)
 router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
@@ -41,9 +92,7 @@ router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
         .json({ success: false, message: "Invalid order id." });
     }
 
-    const order = await collections
-      .orders()
-      .findOne({ _id: new ObjectId(id) });
+    const order = await collections.orders().findOne({ _id: new ObjectId(id) });
 
     if (!order) {
       return res
@@ -51,7 +100,8 @@ router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
         .json({ success: false, message: "Order not found." });
     }
 
-    const isAdmin = (req.user as { role?: string } | undefined)?.role === "admin";
+    const isAdmin =
+      (req.user as { role?: string } | undefined)?.role === "admin";
     if (!isAdmin && order.userId !== req.userId) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
@@ -59,116 +109,55 @@ router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
     res.json({ success: true, order });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Failed to get order." });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to get order." });
   }
 });
 
-// POST /api/orders — create order from cart (checkout)
+// POST /api/orders — create cash-on-delivery order from cart
 router.post("/", requireAuth, async (req: AuthedRequest, res) => {
   try {
-    const { shippingAddress, paymentMethod = "cash-on-delivery" } = req.body;
+    const customer = validateCustomerInfo(req.body.customer);
+    const shippingAddress = validateShippingAddress(req.body.shippingAddress);
 
-    if (!shippingAddress || typeof shippingAddress !== "object") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Shipping address is required." });
-    }
-
-    const cart = await collections.carts().findOne({ userId: req.userId! });
-    const cartItems = (cart?.items ?? []) as any[];
-
-    if (cartItems.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Your cart is empty." });
-    }
-
-    const items = [];
-    for (const item of cartItems) {
-      if (!ObjectId.isValid(item.productId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid product in cart." });
-      }
-      const product = await collections
-        .products()
-        .findOne({ _id: new ObjectId(item.productId) });
-
-      if (!product) {
-        return res
-          .status(400)
-          .json({ success: false, message: "A product in your cart no longer exists." });
-      }
-
-      if (item.quantity > product.stock) {
-        return res.status(400).json({
-          success: false,
-          message: `"${product.title}" has only ${product.stock} in stock.`,
-        });
-      }
-
-      items.push({
-        productId: item.productId,
-        title: product.title,
-        price: product.price,
-        size: item.size ?? null,
-        quantity: item.quantity,
-        image: (product.images ?? [])[0] ?? "",
-      });
-
-      // decrement stock + increment sales
-      await collections.products().updateOne(
-        { _id: new ObjectId(item.productId) },
-        {
-          $inc: { stock: -item.quantity, salesCount: item.quantity },
-          $set: { updatedAt: new Date() },
-        },
-      );
-    }
-
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-    const total = subtotal + SHIPPING_RATE;
-
-    const order = {
-      _id: new ObjectId(),
+    const order = await createOrderFromCart({
       userId: req.userId!,
-      orderNumber: generateOrderNumber(),
-      items,
+      customer,
       shippingAddress,
-      subtotal,
-      shipping: SHIPPING_RATE,
-      total,
-      status: "pending",
-      trackingNumber: null,
-      paymentMethod,
+      paymentMethod: "cash-on-delivery",
       paymentStatus: "pending",
-      statusHistory: [
-        { status: "pending", at: new Date() },
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    });
 
-    const result = await collections.orders().insertOne(order);
-
-    // clear cart
-    await collections.carts().updateOne(
-      { userId: req.userId! },
-      { $set: { items: [], updatedAt: new Date() } },
+    // Cash on delivery is confirmed at order time.
+    await collections.orders().updateOne(
+      { _id: order._id },
+      { $set: { status: "pending", updatedAt: new Date() } },
     );
+
+    await collections
+      .carts()
+      .updateOne(
+        { userId: req.userId! },
+        { $set: { items: [], updatedAt: new Date() } },
+      );
 
     res.status(201).json({
       success: true,
       message: "Order placed successfully.",
-      orderId: result.insertedId,
+      orderId: String(order._id),
       orderNumber: order.orderNumber,
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return res
+        .status(error.status)
+        .json({ success: false, message: error.message });
+    }
     console.error(error);
-    res.status(500).json({ success: false, message: "Failed to place order." });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to place order." });
   }
 });
 
@@ -184,7 +173,7 @@ router.patch("/:id/status", requireAdmin, async (req: AuthedRequest, res) => {
         .json({ success: false, message: "Invalid order id." });
     }
 
-    if (!VALID_STATUSES.includes(status)) {
+    if (!VALID_ORDER_STATUSES.includes(status)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid order status." });
@@ -198,9 +187,10 @@ router.patch("/:id/status", requireAdmin, async (req: AuthedRequest, res) => {
         .json({ success: false, message: "Order not found." });
     }
 
-    const statusHistory = order.statusHistory
-      ? [...order.statusHistory, { status, at: new Date() }]
-      : [{ status, at: new Date() }];
+    const statusHistory = [
+      ...(order.statusHistory ?? []),
+      { status, at: new Date() },
+    ];
 
     await collections.orders().updateOne(
       { _id: new ObjectId(id) },

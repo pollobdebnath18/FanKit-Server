@@ -16,6 +16,8 @@ import addressesRouter from "./routes/addresses.routes.js";
 import blogRouter from "./routes/blog.routes.js";
 import miscRouter from "./routes/misc.routes.js";
 import messagesRouter from "./routes/messages.routes.js";
+import paymentsRouter from "./routes/payments.routes.js";
+import { ApiError } from "./lib/order.service.js";
 
 const app = express();
 await client.connect();
@@ -42,6 +44,9 @@ app.use(
 // Mount BEFORE express.json() — Better Auth reads the raw body itself
 app.all("/api/auth/*path", toNodeHandler(auth));
 
+// Stripe webhook needs the raw body to verify the signature (skips JSON parsing).
+app.use("/api/payments/stripe/webhook", express.raw({ type: "application/json" }));
+
 // Now safe to parse JSON for everything else
 app.use(express.json());
 
@@ -63,6 +68,7 @@ app.use("/api/addresses", addressesRouter);
 app.use("/api/blog", blogRouter);
 app.use("/api", messagesRouter);
 app.use("/api", miscRouter);
+app.use("/api/payments", paymentsRouter);
 
 // Central error handler
 app.use(
@@ -72,6 +78,11 @@ app.use(
     res: express.Response,
     _next: express.NextFunction,
   ) => {
+    if (err instanceof ApiError) {
+      return res
+        .status(err.status)
+        .json({ success: false, message: err.message });
+    }
     console.error(err);
     res.status(500).json({ success: false, message: "Internal server error" });
   },

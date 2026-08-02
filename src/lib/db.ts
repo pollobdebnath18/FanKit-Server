@@ -76,6 +76,19 @@ export interface OrderItem {
   image: string;
 }
 
+export interface CustomerInfo {
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
+export interface ShippingAddress {
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}
+
 export interface OrderStatusEntry {
   status: string;
   at: Date;
@@ -86,14 +99,18 @@ export interface OrderDoc {
   userId: string;
   orderNumber: string;
   items: OrderItem[];
-  shippingAddress: Record<string, unknown>;
+  customer: CustomerInfo;
+  shippingAddress: ShippingAddress;
   subtotal: number;
   shipping: number;
+  discount: number;
   total: number;
   status: string;
   trackingNumber: string | null;
   paymentMethod: string;
   paymentStatus: string;
+  transactionId: string | null;
+  paymentId: string | null;
   statusHistory: OrderStatusEntry[];
   createdAt: Date;
   updatedAt: Date;
@@ -163,13 +180,6 @@ export interface MessageDoc {
   createdAt: Date;
 }
 
-export interface SettingsDoc {
-  _id: ObjectId;
-  key: string;
-  value: Record<string, unknown>;
-  updatedAt: Date;
-}
-
 const getDB = () => client.db(process.env.DB_NAME);
 
 interface Collections {
@@ -184,7 +194,6 @@ interface Collections {
   newsletterSubscribers: () => Collection<NewsletterDoc>;
   contactSubmissions: () => Collection<ContactDoc>;
   messages: () => Collection<MessageDoc>;
-  settings: () => Collection<SettingsDoc>;
 }
 
 export const collections: Collections = {
@@ -199,5 +208,4 @@ export const collections: Collections = {
   newsletterSubscribers: () => getDB().collection("newsletter_subscribers"),
   contactSubmissions: () => getDB().collection("contact_submissions"),
   messages: () => getDB().collection("message"),
-  settings: () => getDB().collection("settings"),
 };
