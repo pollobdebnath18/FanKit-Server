@@ -5,8 +5,6 @@ import { client } from "./mongodb.js";
 import { sendEmail } from "./email.js";
 import "dotenv/config";
 
-const isProd = process.env.NODE_ENV === "production";
-
 const baseURL =
   process.env.BETTER_AUTH_URL ||
   process.env.RENDER_EXTERNAL_URL || // Render sets this automatically
@@ -18,6 +16,8 @@ if (!baseURL) {
       "Google OAuth will fail in production.",
   );
 }
+
+const isProd = baseURL?.startsWith("https://") ?? false;
 
 const trustedOrigins = [
   process.env.CLIENT_URL,
