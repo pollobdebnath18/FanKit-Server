@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
 import { requireAuth, type AuthedRequest } from "../lib/middleware.js";
@@ -15,7 +15,7 @@ const getWishlist = async (userId: string) => {
 };
 
 // GET /api/wishlist — user's wishlist with populated products
-router.get("/", async (req: AuthedRequest, res) => {
+router.get("/", async (req: AuthedRequest, res: Response) => {
   try {
     const wishlist = await getWishlist(req.userId!);
 
@@ -40,7 +40,7 @@ router.get("/", async (req: AuthedRequest, res) => {
 });
 
 // POST /api/wishlist/items — add product to wishlist
-router.post("/items", async (req: AuthedRequest, res) => {
+router.post("/items", async (req: AuthedRequest, res: Response) => {
   try {
     const { productId } = req.body;
 
@@ -83,7 +83,7 @@ router.post("/items", async (req: AuthedRequest, res) => {
 });
 
 // DELETE /api/wishlist/items/:productId — remove from wishlist
-router.delete("/items/:productId", async (req: AuthedRequest, res) => {
+router.delete("/items/:productId", async (req: AuthedRequest, res: Response) => {
   try {
     const { productId } = req.params as { productId: string };
 

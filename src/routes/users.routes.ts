@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { auth } from "../lib/auth.js";
 import { fromNodeHeaders } from "better-auth/node";
@@ -8,7 +8,7 @@ import { requireAuth, requireAdmin, type AuthedRequest } from "../lib/middleware
 const router = Router();
 
 // GET /api/users/auth-status?email=... — check sign-in options for an email
-router.get("/auth-status", async (req, res) => {
+router.get("/auth-status", async (req: Request, res: Response) => {
   try {
     const email = String(req.query.email || "").toLowerCase().trim();
 
@@ -38,7 +38,7 @@ router.get("/auth-status", async (req, res) => {
 });
 
 // POST /api/users/set-role — set role to 'user' after signup
-router.post("/set-role", async (req, res) => {
+router.post("/set-role", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
@@ -63,7 +63,7 @@ router.post("/set-role", async (req, res) => {
 });
 
 // GET /api/users/me — current user profile
-router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
+router.get("/me", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const user = await collections.users().findOne({ _id: new ObjectId(req.userId!) });
 
@@ -79,7 +79,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // PATCH /api/users/me — update profile (name, email, phone, avatar)
-router.patch("/me", requireAuth, async (req: AuthedRequest, res) => {
+router.patch("/me", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const { name, email, phone, avatar, image } = req.body;
 
@@ -117,7 +117,7 @@ router.patch("/me", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // PATCH /api/users/me/password — change password
-router.patch("/me/password", requireAuth, async (req: AuthedRequest, res) => {
+router.patch("/me/password", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
@@ -148,7 +148,7 @@ router.patch("/me/password", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // GET /api/users — all users (admin)
-router.get("/", requireAdmin, async (_req, res) => {
+router.get("/", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const users = await collections.users().find({}).toArray();
     res.json({ success: true, users });
@@ -159,7 +159,7 @@ router.get("/", requireAdmin, async (_req, res) => {
 });
 
 // PATCH /api/users/:id/role — set user role (admin)
-router.patch("/:id/role", requireAdmin, async (req: AuthedRequest, res) => {
+router.patch("/:id/role", requireAdmin, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
     const { role } = req.body;
@@ -191,7 +191,7 @@ router.patch("/:id/role", requireAdmin, async (req: AuthedRequest, res) => {
 });
 
 // DELETE /api/users/:id — delete user (admin)
-router.delete("/:id", requireAdmin, async (req: AuthedRequest, res) => {
+router.delete("/:id", requireAdmin, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
 

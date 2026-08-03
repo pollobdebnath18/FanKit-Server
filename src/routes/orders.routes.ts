@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
 import {
@@ -19,7 +19,7 @@ import {
 const router = Router();
 
 // GET /api/orders/admin — all orders (admin)
-router.get("/admin", requireAdmin, async (req: AuthedRequest, res) => {
+router.get("/admin", requireAdmin, async (req: AuthedRequest, res: Response) => {
   try {
     const orders = await collections
       .orders()
@@ -37,7 +37,7 @@ router.get("/admin", requireAdmin, async (req: AuthedRequest, res) => {
 });
 
 // GET /api/orders — user's orders
-router.get("/", requireAuth, async (req: AuthedRequest, res) => {
+router.get("/", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const orders = await collections
       .orders()
@@ -58,7 +58,7 @@ router.get("/", requireAuth, async (req: AuthedRequest, res) => {
 router.get(
   "/by-payment/:paymentId",
   requireAuth,
-  async (req: AuthedRequest, res) => {
+  async (req: AuthedRequest, res: Response) => {
     try {
       const { paymentId } = req.params as { paymentId: string };
       const order = await collections
@@ -82,7 +82,7 @@ router.get(
 );
 
 // GET /api/orders/:id — single order detail (ownership check)
-router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
+router.get("/:id", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
 
@@ -116,7 +116,7 @@ router.get("/:id", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // POST /api/orders — create cash-on-delivery order from cart
-router.post("/", requireAuth, async (req: AuthedRequest, res) => {
+router.post("/", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const customer = validateCustomerInfo(req.body.customer);
     const shippingAddress = validateShippingAddress(req.body.shippingAddress);
@@ -162,7 +162,7 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // PATCH /api/orders/:id/status — update order status (admin)
-router.patch("/:id/status", requireAdmin, async (req: AuthedRequest, res) => {
+router.patch("/:id/status", requireAdmin, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
     const { status } = req.body;
@@ -207,7 +207,7 @@ router.patch("/:id/status", requireAdmin, async (req: AuthedRequest, res) => {
 });
 
 // PATCH /api/orders/:id/tracking — add tracking info (admin)
-router.patch("/:id/tracking", requireAdmin, async (req: AuthedRequest, res) => {
+router.patch("/:id/tracking", requireAdmin, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
     const { trackingNumber } = req.body;

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
 import { requireAuth, type AuthedRequest } from "../lib/middleware.js";
@@ -20,7 +20,7 @@ const getCart = async (userId: string) => {
 };
 
 // GET /api/cart — current user's cart with populated product data
-router.get("/", async (req: AuthedRequest, res) => {
+router.get("/", async (req: AuthedRequest, res: Response) => {
   try {
     const cart = await getCart(req.userId!);
 
@@ -65,7 +65,7 @@ router.get("/", async (req: AuthedRequest, res) => {
 });
 
 // POST /api/cart/items — add item to cart
-router.post("/items", async (req: AuthedRequest, res) => {
+router.post("/items", async (req: AuthedRequest, res: Response) => {
   try {
     const { productId, size, quantity = 1 } = req.body;
 
@@ -136,7 +136,7 @@ router.post("/items", async (req: AuthedRequest, res) => {
 });
 
 // PATCH /api/cart/items/:id — update item quantity
-router.patch("/items/:id", async (req: AuthedRequest, res) => {
+router.patch("/items/:id", async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
     const { quantity } = req.body;
@@ -177,7 +177,7 @@ router.patch("/items/:id", async (req: AuthedRequest, res) => {
 });
 
 // DELETE /api/cart/items/:id — remove item from cart
-router.delete("/items/:id", async (req: AuthedRequest, res) => {
+router.delete("/items/:id", async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
 
@@ -202,7 +202,7 @@ router.delete("/items/:id", async (req: AuthedRequest, res) => {
 });
 
 // DELETE /api/cart — clear cart
-router.delete("/", async (req: AuthedRequest, res) => {
+router.delete("/", async (req: AuthedRequest, res: Response) => {
   try {
     await collections.carts().updateOne(
       { userId: req.userId! },

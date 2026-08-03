@@ -4,6 +4,9 @@ import { fromNodeHeaders } from "better-auth/node";
 import type { User } from "better-auth";
 
 export interface AuthedRequest extends Request {
+  body: any;
+  params: Record<string, string>;
+  headers: Record<string, string | string[] | undefined>;
   user?: User;
   userId?: string;
 }

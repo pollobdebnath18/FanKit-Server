@@ -32,7 +32,7 @@ const isLocalhost = (origin: string | undefined) =>
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // No origin (server-to-server, health checks) – allow
       // Dev: allow any localhost port (Vite may auto-shift if 5173 is busy)
       if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
@@ -54,7 +54,7 @@ app.use("/api/payments/stripe/webhook", express.raw({ type: "application/json" }
 // Now safe to parse JSON for everything else
 app.use(express.json());
 
-app.get("/", (_req, res) => {
+app.get("/", (_req: express.Request, res: express.Response) => {
   res.send({
     message: "server running successfully",
   });

@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { collections } from "../lib/db.js";
 
 const router = Router();
 
 // GET /api/collections — filtered products with pagination
 // Query params: search, category, subcategory, type, team, sort, page, limit, minPrice, maxPrice, featured, onSale
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const {
       search = "",

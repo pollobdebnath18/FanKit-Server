@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
 
 const router = Router();
 
 // POST /api/contact — submit contact form
-router.post("/contact", async (req, res) => {
+router.post("/contact", async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
@@ -37,7 +37,7 @@ router.post("/contact", async (req, res) => {
 });
 
 // POST /api/newsletter — subscribe email
-router.post("/newsletter", async (req, res) => {
+router.post("/newsletter", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 

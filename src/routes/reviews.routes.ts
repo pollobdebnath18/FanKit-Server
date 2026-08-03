@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
 import { requireAuth, type AuthedRequest } from "../lib/middleware.js";
@@ -32,7 +32,7 @@ const recomputeRating = async (productId: string) => {
 };
 
 // GET /api/products/:productId/reviews — public
-router.get("/products/:productId/reviews", async (req, res) => {
+router.get("/products/:productId/reviews", async (req: Request, res: Response) => {
   try {
     const { productId } = req.params as { productId: string };
 
@@ -58,7 +58,7 @@ router.get("/products/:productId/reviews", async (req, res) => {
 });
 
 // POST /api/products/:productId/reviews — create review (authenticated)
-router.post("/products/:productId/reviews", requireAuth, async (req: AuthedRequest, res) => {
+router.post("/products/:productId/reviews", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const { productId } = req.params as { productId: string };
     const { rating, title, comment } = req.body;
@@ -120,7 +120,7 @@ router.post("/products/:productId/reviews", requireAuth, async (req: AuthedReque
 });
 
 // PATCH /api/reviews/:id — edit own review
-router.patch("/reviews/:id", requireAuth, async (req: AuthedRequest, res) => {
+router.patch("/reviews/:id", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
     const { rating, title, comment } = req.body;
@@ -172,7 +172,7 @@ router.patch("/reviews/:id", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // DELETE /api/reviews/:id — delete own review
-router.delete("/reviews/:id", requireAuth, async (req: AuthedRequest, res) => {
+router.delete("/reviews/:id", requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params as { id: string };
 

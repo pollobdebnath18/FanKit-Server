@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
 
 const router = Router();
 
 // POST /api/messages — submit a contact form message (public)
-router.post("/messages", async (req, res) => {
+router.post("/messages", async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 

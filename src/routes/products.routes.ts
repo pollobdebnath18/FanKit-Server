@@ -1,7 +1,7 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../lib/db.js";
-import { requireAdmin } from "../lib/middleware.js";
+import { requireAdmin, type AuthedRequest } from "../lib/middleware.js";
 
 const router = Router();
 
@@ -18,7 +18,7 @@ const slugify = (text: string) =>
 // Backward-compatible: with NO filter params it returns a plain array
 // (as the existing client expects). With filters it returns
 // { products, totalProducts, totalPages, currentPage, filterCounts }.
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const {
       category, // → DB `sport` (football | cricket | accessories)
@@ -194,7 +194,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET /api/products/:slug — single product by slug (fallback to _id for legacy links)
-router.get("/:slug", async (req, res) => {
+router.get("/:slug", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params as { slug: string };
     let product = null;
@@ -223,7 +223,7 @@ router.get("/:slug", async (req, res) => {
 });
 
 // POST /api/products — create product (admin)
-router.post("/", requireAdmin, async (req, res) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const {
       title,
@@ -307,7 +307,7 @@ router.post("/", requireAdmin, async (req, res) => {
 });
 
 // PATCH /api/products/:id — update product (admin)
-router.patch("/:id", requireAdmin, async (req, res) => {
+router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params as { id: string };
 
@@ -354,7 +354,7 @@ router.patch("/:id", requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/products/:id — delete product (admin)
-router.delete("/:id", requireAdmin, async (req, res) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params as { id: string };
 
