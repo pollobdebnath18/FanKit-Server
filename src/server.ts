@@ -32,7 +32,10 @@ const isLocalhost = (origin: string | undefined) =>
 
 app.use(
   cors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       // No origin (server-to-server, health checks) – allow
       // Dev: allow any localhost port (Vite may auto-shift if 5173 is busy)
       if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
@@ -49,7 +52,10 @@ app.use(
 app.all("/api/auth/*path", toNodeHandler(auth));
 
 // Stripe webhook needs the raw body to verify the signature (skips JSON parsing).
-app.use("/api/payments/stripe/webhook", express.raw({ type: "application/json" }));
+app.use(
+  "/api/payments/stripe/webhook",
+  express.raw({ type: "application/json" }),
+);
 
 // Now safe to parse JSON for everything else
 app.use(express.json());
@@ -93,9 +99,16 @@ app.use(
 );
 
 const port = Number(process.env.PORT) || 8000;
-app.listen(port, () => {
-  console.log(`Server running On PORT ${port}`);
-  console.log(`NODE_ENV: ${process.env.NODE_ENV || "(not set)"}`);
-  console.log(`BASE_URL: ${process.env.BETTER_AUTH_URL || process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || "(not set)"}`);
-  console.log(`CLIENT_URL: ${process.env.CLIENT_URL || "(not set)"}`);
-});
+
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Server running On PORT ${port}`);
+    console.log(`NODE_ENV: ${process.env.NODE_ENV || "(not set)"}`);
+    console.log(
+      `BASE_URL: ${process.env.BETTER_AUTH_URL || process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || "(not set)"}`,
+    );
+    console.log(`CLIENT_URL: ${process.env.CLIENT_URL || "(not set)"}`);
+  });
+}
+
+export default app;

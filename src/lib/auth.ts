@@ -8,21 +8,23 @@ import "dotenv/config";
 const baseURL =
   process.env.BETTER_AUTH_URL ||
   process.env.RENDER_EXTERNAL_URL || // Render sets this automatically
-  process.env.BASE_URL;
+  process.env.BASE_URL ||
+  "http://localhost:8000";
 
-if (!baseURL) {
-  console.error(
-    "[auth] FATAL: Neither BETTER_AUTH_URL nor BASE_URL is set. " +
-      "Google OAuth will fail in production.",
-  );
-}
+const isProd = baseURL.startsWith("https://");
 
-const isProd = baseURL?.startsWith("https://") ?? false;
+const clientOrigin = process.env.CLIENT_URL?.replace(/\/$/, "") || "";
+const serverOrigin = baseURL.replace(/\/$/, "");
 
-const trustedOrigins = [
-  process.env.CLIENT_URL,
-  ...(isProd ? [] : ["http://localhost:*"]),
-].filter(Boolean) as string[];
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      clientOrigin,
+      serverOrigin,
+      ...(isProd ? [] : ["http://localhost:5173", "http://localhost:8000"]),
+    ].filter(Boolean),
+  ),
+) as string[];
 
 export const auth = betterAuth({
   database: mongodbAdapter(client.db(process.env.DB_NAME)),
