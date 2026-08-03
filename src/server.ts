@@ -22,6 +22,9 @@ import { ApiError } from "./lib/order.service.js";
 const app = express();
 await client.connect();
 
+// Trust the first proxy (Render, Vercel, etc.) so req.protocol / req.ip are correct
+app.set("trust proxy", 1);
+
 const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
 
 const isLocalhost = (origin: string | undefined) =>
@@ -30,6 +33,7 @@ const isLocalhost = (origin: string | undefined) =>
 app.use(
   cors({
     origin: (origin, callback) => {
+      // No origin (server-to-server, health checks) – allow
       // Dev: allow any localhost port (Vite may auto-shift if 5173 is busy)
       if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -91,4 +95,7 @@ app.use(
 const port = Number(process.env.PORT) || 8000;
 app.listen(port, () => {
   console.log(`Server running On PORT ${port}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV || "(not set)"}`);
+  console.log(`BASE_URL: ${process.env.BETTER_AUTH_URL || process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || "(not set)"}`);
+  console.log(`CLIENT_URL: ${process.env.CLIENT_URL || "(not set)"}`);
 });

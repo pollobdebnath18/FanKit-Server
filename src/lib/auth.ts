@@ -7,7 +7,18 @@ import "dotenv/config";
 
 const isProd = process.env.NODE_ENV === "production";
 
-// Dev: allow any localhost port (Vite may auto-shift if 5173 is busy)
+const baseURL =
+  process.env.BETTER_AUTH_URL ||
+  process.env.RENDER_EXTERNAL_URL || // Render sets this automatically
+  process.env.BASE_URL;
+
+if (!baseURL) {
+  console.error(
+    "[auth] FATAL: Neither BETTER_AUTH_URL nor BASE_URL is set. " +
+      "Google OAuth will fail in production.",
+  );
+}
+
 const trustedOrigins = [
   process.env.CLIENT_URL,
   ...(isProd ? [] : ["http://localhost:*"]),
@@ -15,7 +26,7 @@ const trustedOrigins = [
 
 export const auth = betterAuth({
   database: mongodbAdapter(client.db(process.env.DB_NAME)),
-  baseURL: process.env.BASE_URL,
+  baseURL: baseURL!,
   secret: process.env.BETTER_AUTH_SECRET,
 
   trustedOrigins,
@@ -30,8 +41,6 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
-      // Dev fallback: log the reset link.
-      // TODO: integrate with an email provider (future scope §11).
       console.log(`[forgot-password] ${user.email}: ${url}`);
     },
   },
@@ -81,7 +90,10 @@ export const auth = betterAuth({
           sameSite: "none",
           secure: true,
           httpOnly: true,
-          partitioned: true, // CHIPS — required for cross-origin cookies in Chrome 118+
+          // NOTE: do NOT use CHIPS (partitioned) here — a partitioned cookie is
+          // scoped to its top-level site, so the OAuth `state` cookie is dropped
+          // across the Google redirect chain and sign-in fails with
+          // state_mismatch. Deterministic cross-site cookies work via SameSite=None + Secure.
         }
       : {},
   },
