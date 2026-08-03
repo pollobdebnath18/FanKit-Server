@@ -25,10 +25,21 @@ await client.connect();
 // Trust the first proxy (Render, Vercel, etc.) so req.protocol / req.ip are correct
 app.set("trust proxy", 1);
 
-const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
+const normalizeOrigin = (value: string | undefined) =>
+  value?.replace(/\/$/, "") || "";
+
+const allowedOrigins = [
+  normalizeOrigin(process.env.CLIENT_URL),
+  normalizeOrigin(process.env.BETTER_AUTH_URL),
+  normalizeOrigin(process.env.BASE_URL),
+  normalizeOrigin(process.env.RENDER_EXTERNAL_URL),
+].filter(Boolean) as string[];
 
 const isLocalhost = (origin: string | undefined) =>
   Boolean(origin && /^http:\/\/localhost(:\d+)?$/.test(origin));
+
+const isVercelOrigin = (origin: string | undefined) =>
+  Boolean(origin && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin));
 
 app.use(
   cors({
@@ -36,9 +47,14 @@ app.use(
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // No origin (server-to-server, health checks) – allow
-      // Dev: allow any localhost port (Vite may auto-shift if 5173 is busy)
-      if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
+      const normalizedOrigin = normalizeOrigin(origin);
+
+      if (
+        !origin ||
+        isLocalhost(normalizedOrigin) ||
+        isVercelOrigin(normalizedOrigin) ||
+        allowedOrigins.includes(normalizedOrigin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));

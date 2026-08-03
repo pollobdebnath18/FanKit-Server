@@ -21,6 +21,7 @@ const trustedOrigins = Array.from(
     [
       clientOrigin,
       serverOrigin,
+      process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, "") || "",
       ...(isProd ? [] : ["http://localhost:5173", "http://localhost:8000"]),
     ].filter(Boolean),
   ),
