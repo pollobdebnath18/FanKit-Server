@@ -1,5 +1,5 @@
-import "dotenv/config";
 import { client } from "./mongodb.js";
+import { env } from "./env.js";
 import type { Collection, ObjectId } from "mongodb";
 
 export interface UserDoc {
@@ -180,7 +180,7 @@ export interface MessageDoc {
   createdAt: Date;
 }
 
-const getDB = () => client.db(process.env.DB_NAME);
+const getDB = () => client.db(env.DB_NAME);
 
 interface Collections {
   users: () => Collection<UserDoc>;

@@ -1,11 +1,12 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import { env } from "./env.js";
 
-const host = process.env.SMTP_HOST || "smtp.gmail.com";
-const port = Number(process.env.SMTP_PORT) || 587;
-const user = process.env.SMTP_USER || "";
-const pass = process.env.SMTP_PASS || "";
-const from = process.env.EMAIL_FROM || `"FanKit" <${user}>`;
+const host = env.SMTP_HOST || "smtp.gmail.com";
+const port = Number(env.SMTP_PORT) || 587;
+const user = env.SMTP_USER;
+const pass = env.SMTP_PASS;
+const from = env.EMAIL_FROM || `"FanKit" <${user}>`;
 
 let transporter: Transporter | null = null;
 
@@ -14,7 +15,7 @@ const getTransporter = () => {
     transporter = nodemailer.createTransport({
       host,
       port,
-      secure: Number(process.env.SMTP_PORT) === 465,
+      secure: Number(env.SMTP_PORT) === 465,
       auth: user && pass ? { user, pass } : undefined,
     });
   }

@@ -3,44 +3,25 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { emailOTP } from "better-auth/plugins";
 import { client } from "./mongodb.js";
 import { sendEmail } from "./email.js";
-import "dotenv/config";
+import { env } from "./env.js";
 
 const fallbackServerOrigin = "https://fan-kit-server.vercel.app";
 const fallbackClientOrigin = "https://fan-kit-client.vercel.app";
 
 const baseURL =
-  process.env.BETTER_AUTH_URL ||
-  process.env.RENDER_EXTERNAL_URL ||
-  process.env.BASE_URL ||
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:8000");
+  env.BETTER_AUTH_URL ||
+  env.RENDER_EXTERNAL_URL ||
+  env.BASE_URL ||
+  (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : fallbackServerOrigin);
 
-const isProd = baseURL.startsWith("https://");
+const isProd = process.env.NODE_ENV === "production";
 
-const clientOrigin =
-  process.env.CLIENT_URL?.replace(/\/$/, "") ||
-  (isProd ? fallbackClientOrigin : "");
-const serverOrigin =
-  baseURL.replace(/\/$/, "") || (isProd ? fallbackServerOrigin : "");
-
-const trustedOrigins = Array.from(
-  new Set(
-    [
-      clientOrigin,
-      serverOrigin,
-      fallbackClientOrigin,
-      fallbackServerOrigin,
-      process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, "") || "",
-      ...(isProd ? [] : ["http://localhost:5173", "http://localhost:8000"]),
-    ].filter(Boolean),
-  ),
-) as string[];
+const trustedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
 
 export const auth = betterAuth({
-  database: mongodbAdapter(client.db(process.env.DB_NAME)),
-  baseURL: baseURL!,
-  secret: process.env.BETTER_AUTH_SECRET,
+  database: mongodbAdapter(client.db(env.DB_NAME)),
+  secret: env.BETTER_AUTH_SECRET,
+  baseURL: process.env.BASE_URL,
 
   trustedOrigins,
 
@@ -84,8 +65,8 @@ export const auth = betterAuth({
 
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: env.GOOGLE_CLIENT_ID || "",
+      clientSecret: env.GOOGLE_CLIENT_SECRET || "",
     },
   },
   user: {
@@ -103,10 +84,7 @@ export const auth = betterAuth({
           sameSite: "none",
           secure: true,
           httpOnly: true,
-          // NOTE: do NOT use CHIPS (partitioned) here — a partitioned cookie is
-          // scoped to its top-level site, so the OAuth `state` cookie is dropped
-          // across the Google redirect chain and sign-in fails with
-          // state_mismatch. Deterministic cross-site cookies work via SameSite=None + Secure.
+          partitioned: true, // CHIPS — required for cross-origin cookies in Chrome 118+
         }
       : {},
   },

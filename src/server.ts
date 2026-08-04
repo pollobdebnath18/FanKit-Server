@@ -1,9 +1,9 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { client } from "./lib/mongodb.js";
+import { env } from "./lib/env.js";
 
 import productsRouter from "./routes/products.routes.js";
 import collectionsRouter from "./routes/collections.routes.js";
@@ -20,41 +20,20 @@ import paymentsRouter from "./routes/payments.routes.js";
 import { ApiError } from "./lib/order.service.js";
 
 const app = express();
-await client.connect();
+// await client.connect();
 
 // Trust the first proxy (Render, Vercel, etc.) so req.protocol / req.ip are correct
 app.set("trust proxy", 1);
 
-const normalizeOrigin = (value: string | undefined) =>
-  value?.replace(/\/$/, "") || "";
-
-const allowedOrigins = [
-  normalizeOrigin(process.env.CLIENT_URL),
-  normalizeOrigin(process.env.BETTER_AUTH_URL),
-  normalizeOrigin(process.env.BASE_URL),
-  normalizeOrigin(process.env.RENDER_EXTERNAL_URL),
-].filter(Boolean) as string[];
-
-const isLocalhost = (origin: string | undefined) =>
-  Boolean(origin && /^http:\/\/localhost(:\d+)?$/.test(origin));
+const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
 
 const isVercelOrigin = (origin: string | undefined) =>
   Boolean(origin && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin));
 
 app.use(
   cors({
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => {
-      const normalizedOrigin = normalizeOrigin(origin);
-
-      if (
-        !origin ||
-        isLocalhost(normalizedOrigin) ||
-        isVercelOrigin(normalizedOrigin) ||
-        allowedOrigins.includes(normalizedOrigin)
-      ) {
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
@@ -63,7 +42,6 @@ app.use(
     credentials: true,
   }),
 );
-
 // Mount BEFORE express.json() — Better Auth reads the raw body itself
 app.all("/api/auth/*path", toNodeHandler(auth));
 
@@ -114,16 +92,16 @@ app.use(
   },
 );
 
-const port = Number(process.env.PORT) || 8000;
+const port = Number(env.PORT) || 8000;
 
-if (!process.env.VERCEL) {
+if (!env.VERCEL) {
   app.listen(port, () => {
     console.log(`Server running On PORT ${port}`);
-    console.log(`NODE_ENV: ${process.env.NODE_ENV || "(not set)"}`);
+    console.log(`NODE_ENV: ${env.NODE_ENV || "(not set)"}`);
     console.log(
-      `BASE_URL: ${process.env.BETTER_AUTH_URL || process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || "(not set)"}`,
+      `BASE_URL: ${env.BETTER_AUTH_URL || env.RENDER_EXTERNAL_URL || env.BASE_URL || "(not set)"}`,
     );
-    console.log(`CLIENT_URL: ${process.env.CLIENT_URL || "(not set)"}`);
+    console.log(`CLIENT_URL: ${env.CLIENT_URL || "(not set)"}`);
   });
 }
 

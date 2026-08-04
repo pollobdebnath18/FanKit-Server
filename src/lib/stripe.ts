@@ -1,8 +1,8 @@
 import Stripe from "stripe";
-import "dotenv/config";
 import { ApiError } from "./order.service.js";
+import { env } from "./env.js";
 
-const secretKey = process.env.STRIPE_SECRET_KEY || "";
+const secretKey = env.STRIPE_SECRET_KEY;
 
 const API_VERSION = "2026-07-29.dahlia";
 
@@ -24,8 +24,8 @@ export const getStripe = (): Stripe => {
   return stripeInstance;
 };
 
-export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
-export const PAYMENT_CURRENCY = process.env.PAYMENT_CURRENCY || "bdt";
+export const STRIPE_WEBHOOK_SECRET = env.STRIPE_WEBHOOK_SECRET;
+export const PAYMENT_CURRENCY = env.PAYMENT_CURRENCY || "bdt";
 
 /** Converts a BDT amount to the smallest currency unit (poisha). */
 export const toMinorUnits = (amount: number): number =>
