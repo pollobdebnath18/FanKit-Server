@@ -5,22 +5,32 @@ import { client } from "./mongodb.js";
 import { sendEmail } from "./email.js";
 import "dotenv/config";
 
+const fallbackServerOrigin = "https://fan-kit-server.vercel.app";
+const fallbackClientOrigin = "https://fan-kit-client.vercel.app";
+
 const baseURL =
   process.env.BETTER_AUTH_URL ||
-  process.env.RENDER_EXTERNAL_URL || // Render sets this automatically
+  process.env.RENDER_EXTERNAL_URL ||
   process.env.BASE_URL ||
-  "http://localhost:8000";
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:8000");
 
 const isProd = baseURL.startsWith("https://");
 
-const clientOrigin = process.env.CLIENT_URL?.replace(/\/$/, "") || "";
-const serverOrigin = baseURL.replace(/\/$/, "");
+const clientOrigin =
+  process.env.CLIENT_URL?.replace(/\/$/, "") ||
+  (isProd ? fallbackClientOrigin : "");
+const serverOrigin =
+  baseURL.replace(/\/$/, "") || (isProd ? fallbackServerOrigin : "");
 
 const trustedOrigins = Array.from(
   new Set(
     [
       clientOrigin,
       serverOrigin,
+      fallbackClientOrigin,
+      fallbackServerOrigin,
       process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, "") || "",
       ...(isProd ? [] : ["http://localhost:5173", "http://localhost:8000"]),
     ].filter(Boolean),

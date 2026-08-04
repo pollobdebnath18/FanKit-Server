@@ -63,7 +63,7 @@ router.post("/set-role", async (req: Request, res: Response) => {
 });
 
 // GET /api/users/me — current user profile
-router.get("/me", requireAuth, async (req: AuthedRequest, res: Response) => {
+router.get("/me",requireAuth, async (req: AuthedRequest, res: Response) => {
   try {
     const user = await collections.users().findOne({ _id: new ObjectId(req.userId!) });
 
