@@ -25,7 +25,14 @@ const app = express();
 // Trust the first proxy (Render, Vercel, etc.) so req.protocol / req.ip are correct
 app.set("trust proxy", 1);
 
-const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.BETTER_AUTH_URL,
+  process.env.RENDER_EXTERNAL_URL,
+  process.env.BASE_URL,
+].filter(Boolean) as string[];
+
+const normalizeOrigin = (origin: string) => origin.replace(/\/$/, "");
 
 const isVercelOrigin = (origin: string | undefined) =>
   Boolean(origin && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin));
@@ -33,7 +40,16 @@ const isVercelOrigin = (origin: string | undefined) =>
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const normalizedOrigin = normalizeOrigin(origin);
+      const isAllowedOrigin =
+        allowedOrigins.includes(normalizedOrigin) || isVercelOrigin(origin);
+
+      if (isAllowedOrigin) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));

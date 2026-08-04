@@ -6,22 +6,36 @@ import { sendEmail } from "./email.js";
 import { env } from "./env.js";
 
 const fallbackServerOrigin = "https://fan-kit-server.vercel.app";
-const fallbackClientOrigin = "https://fan-kit-client.vercel.app";
+const fallbackClientOrigin = "https://fankit-two.vercel.app";
 
-const baseURL =
+const serverOrigin = (
   env.BETTER_AUTH_URL ||
   env.RENDER_EXTERNAL_URL ||
   env.BASE_URL ||
-  (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : fallbackServerOrigin);
+  (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : fallbackServerOrigin)
+).replace(/\/$/, "");
+
+const clientOrigin = (env.CLIENT_URL || fallbackClientOrigin).replace(/\/$/, "");
 
 const isProd = process.env.NODE_ENV === "production";
 
-const trustedOrigins = [process.env.CLIENT_URL].filter(Boolean) as string[];
+// In production the browser only ever calls the client origin: Vercel rewrites
+// /api/* to the server, so the session cookie stays first-party and every URL
+// better-auth generates (OAuth callbacks, etc.) must go through the client too.
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      clientOrigin,
+      serverOrigin,
+      ...(isProd ? [] : ["http://localhost:5173", "http://localhost:8000"]),
+    ].filter(Boolean),
+  ),
+) as string[];
 
 export const auth = betterAuth({
   database: mongodbAdapter(client.db(env.DB_NAME)),
   secret: env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BASE_URL,
+  baseURL: isProd ? clientOrigin : serverOrigin,
 
   trustedOrigins,
 
@@ -84,7 +98,6 @@ export const auth = betterAuth({
           sameSite: "none",
           secure: true,
           httpOnly: true,
-          partitioned: true, // CHIPS — required for cross-origin cookies in Chrome 118+
         }
       : {},
   },
