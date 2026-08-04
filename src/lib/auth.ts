@@ -22,11 +22,16 @@ const isProd = process.env.NODE_ENV === "production";
 // In production the browser only ever calls the client origin: Vercel rewrites
 // /api/* to the server, so the session cookie stays first-party and every URL
 // better-auth generates (OAuth callbacks, etc.) must go through the client too.
+// Always include both the env-derived values AND the hardcoded fallbacks so
+// Better Auth's CSRF/origin check never rejects the Vercel frontend, even if
+// CLIENT_URL or BETTER_AUTH_URL are missing from Render's env vars.
 const trustedOrigins = Array.from(
   new Set(
     [
       clientOrigin,
       serverOrigin,
+      fallbackClientOrigin, // https://fankit-two.vercel.app  (always included)
+      fallbackServerOrigin, // https://fan-kit-server.vercel.app (always included)
       ...(isProd ? [] : ["http://localhost:5173", "http://localhost:8000"]),
     ].filter(Boolean),
   ),
