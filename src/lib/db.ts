@@ -6,6 +6,7 @@ export interface UserDoc {
   _id: ObjectId;
   name: string;
   email: string;
+  firebaseUid?: string;
   role?: string;
   phone?: string;
   avatar?: string;

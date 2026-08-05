@@ -1,8 +1,13 @@
 import { Router, type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
-import { auth } from "../lib/auth.js";
-import { fromNodeHeaders } from "better-auth/node";
 import { collections } from "../lib/db.js";
+import {
+  getFirebaseAccountState,
+  getFirebaseUidFromObjectId,
+  updateFirebasePassword,
+  updateFirebaseProfile,
+  verifyFirebasePassword,
+} from "../lib/firebase-admin.js";
 import { requireAuth, requireAdmin, type AuthedRequest } from "../lib/middleware.js";
 
 const router = Router();
@@ -16,21 +21,9 @@ router.get("/auth-status", async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Email is required." });
     }
 
-    const user = await collections.users().findOne({ email });
-    if (!user) {
-      return res.json({ success: true, exists: false, hasPassword: false });
-    }
+    const { exists, hasPassword } = await getFirebaseAccountState(email);
 
-    const account = await collections
-      .users()
-      .db.collection("account")
-      .findOne({ userId: user._id, providerId: "credential" });
-
-    res.json({
-      success: true,
-      exists: true,
-      hasPassword: Boolean(account?.password),
-    });
+    res.json({ success: true, exists, hasPassword });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to check auth status." });
@@ -90,17 +83,19 @@ router.patch("/me", requireAuth, async (req: AuthedRequest, res: Response) => {
     if (image !== undefined) updates.image = image;
     if (email !== undefined) updates.email = email;
 
-    // keep Better Auth session in sync
+    // sync profile to Firebase Auth
     try {
-      await auth.api.updateUser({
-        body: {
-          name: name as string,
-          image: (avatar as string) ?? (image as string),
-        },
-        headers: fromNodeHeaders(req.headers),
-      });
+      const firebaseUid = await getFirebaseUidFromObjectId(req.userId!);
+      if (firebaseUid) {
+        const firebasePayload: { displayName?: string; photoURL?: string } = {};
+        if (name) firebasePayload.displayName = name as string;
+        if (avatar || image) firebasePayload.photoURL = (avatar as string) ?? (image as string);
+        if (Object.keys(firebasePayload).length > 0) {
+          await updateFirebaseProfile(firebaseUid, firebasePayload);
+        }
+      }
     } catch (e) {
-      console.error("better-auth updateUser failed:", e);
+      console.error("Firebase profile sync failed:", e);
     }
 
     await collections
@@ -133,10 +128,22 @@ router.patch("/me/password", requireAuth, async (req: AuthedRequest, res: Respon
         .json({ success: false, message: "Password must be at least 8 characters." });
     }
 
-    const result = await auth.api.changePassword({
-      body: { currentPassword, newPassword },
-      headers: fromNodeHeaders(req.headers),
-    });
+    const user = await collections.users().findOne({ _id: new ObjectId(req.userId!) });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    const firebaseUid = await getFirebaseUidFromObjectId(req.userId!);
+    if (!firebaseUid) {
+      return res.status(400).json({ success: false, message: "No linked Firebase account." });
+    }
+
+    const valid = await verifyFirebasePassword(user.email, currentPassword);
+    if (!valid) {
+      return res.status(400).json({ success: false, message: "Current password is incorrect." });
+    }
+
+    await updateFirebasePassword(firebaseUid, newPassword);
 
     res.json({ success: true, message: "Password changed." });
   } catch (error) {

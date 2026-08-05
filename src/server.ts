@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "./lib/auth.js";
 import { client } from "./lib/mongodb.js";
 import { env } from "./lib/env.js";
 
@@ -27,7 +25,6 @@ app.set("trust proxy", 1);
 
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  process.env.BETTER_AUTH_URL,
   process.env.RENDER_EXTERNAL_URL,
   process.env.BASE_URL,
 ].filter(Boolean) as string[];
@@ -58,10 +55,7 @@ app.use(
     credentials: true,
   }),
 );
-// Mount BEFORE express.json() — Better Auth reads the raw body itself
-app.all("/api/auth/*path", toNodeHandler(auth));
-
-// Stripe webhook needs the raw body to verify the signature (skips JSON parsing).
+// Mount BEFORE express.json() — Stripe webhook needs the raw body to verify the signature.
 app.use(
   "/api/payments/stripe/webhook",
   express.raw({ type: "application/json" }),
@@ -115,7 +109,7 @@ if (!env.VERCEL) {
     console.log(`Server running On PORT ${port}`);
     console.log(`NODE_ENV: ${env.NODE_ENV || "(not set)"}`);
     console.log(
-      `BASE_URL: ${env.BETTER_AUTH_URL || env.RENDER_EXTERNAL_URL || env.BASE_URL || "(not set)"}`,
+      `BASE_URL: ${env.RENDER_EXTERNAL_URL || env.BASE_URL || "(not set)"}`,
     );
     console.log(`CLIENT_URL: ${env.CLIENT_URL || "(not set)"}`);
   });
