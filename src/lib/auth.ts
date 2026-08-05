@@ -42,6 +42,8 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: isProd ? clientOrigin : serverOrigin,
 
+  trustHost: true,
+
   trustedOrigins,
 
   rateLimit: {
@@ -100,7 +102,7 @@ export const auth = betterAuth({
     useSecureCookies: isProd,
     defaultCookieAttributes: isProd
       ? {
-          sameSite: "none",
+          sameSite: "lax",
           secure: true,
           httpOnly: true,
         }
