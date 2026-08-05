@@ -5,7 +5,7 @@ import { client } from "./mongodb.js";
 import { sendEmail } from "./email.js";
 import { env } from "./env.js";
 
-const fallbackServerOrigin = "https://fan-kit-server.vercel.app";
+const fallbackServerOrigin = "https://fankit-server.onrender.com";
 const fallbackClientOrigin = "https://fankit-two.vercel.app";
 
 const serverOrigin = (
