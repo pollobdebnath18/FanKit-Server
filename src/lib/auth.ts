@@ -17,7 +17,7 @@ const serverOrigin = (
 
 const clientOrigin = (env.CLIENT_URL || fallbackClientOrigin).replace(/\/$/, "");
 
-const isProd = process.env.NODE_ENV === "production";
+const isProd = process.env.NODE_ENV === "production" || process.env.RENDER === "true" || !!process.env.RENDER_EXTERNAL_URL;
 
 // In production the browser only ever calls the client origin: Vercel rewrites
 // /api/* to the server, so the session cookie stays first-party and every URL
